@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forex Pre‑US Open PRO</title>
+<style>
+body {font-family: Arial; background:#0f172a; color:#e2e8f0; margin:0; padding:20px}
+h1 {text-align:center}
+.grid {display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px}
+.card {background:#1e293b; padding:20px; border-radius:12px}
+button {width:100%; padding:12px; background:#22c55e; border:none; border-radius:8px; margin-top:20px; cursor:pointer}
+.result {margin-top:20px; padding:20px; background:#020617; border-radius:10px}
+</style>
+</head>
+<body>
+<h1>Forex Dashboard PRO (Pre NY)</h1>
+
+<div class="grid">
+<div class="card"><h3>Fear & Greed</h3><p id="fear"></p></div>
+<div class="card"><h3>DXY</h3><p id="dxy"></p></div>
+<div class="card"><h3>Prima Riesgo</h3><p id="risk"></p></div>
+<div class="card"><h3>Asia</h3><p id="asia"></p></div>
+<div class="card"><h3>Londres</h3><p id="london"></p></div>
+</div>
+
+<button onclick="generatePlan()">Generar Plan</button>
+
+<div class="result" id="result"></div>
+
+<script>
+async function loadData(){
+
+// Fear & Greed
+let fear = await fetch("https://api.alternative.me/fng/").then(r=>r.json());
+document.getElementById("fear").innerText = fear.data[0].value_classification;
+
+// DXY
+let dxy = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=EUR").then(r=>r.json());
+document.getElementById("dxy").innerText = dxy.rates.EUR;
+
+// Prima riesgo proxy (US10Y)
+let risk = await fetch("https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=8895f04f8f01972418450dc216c38cd3&file_type=json").then(r=>r.json());
+document.getElementById("risk").innerText = risk.observations.slice(-1)[0].value;
+
+// Asia proxy Nikkei
+let asia = await fetch("https://api.exchangerate.host/latest?base=JPY&symbols=USD").then(r=>r.json());
+document.getElementById("asia").innerText = asia.rates.USD;
+
+// Londres proxy FTSE
+let london = await fetch("https://api.exchangerate.host/latest?base=GBP&symbols=USD").then(r=>r.json());
+document.getElementById("london").innerText = london.rates.USD;
+}
+
+loadData();
+
+function structureSL(entry, high, low, direction){
+if(direction == "BUY") return low - 0.0005;
+if(direction == "SELL") return high + 0.0005;
+}
+
+function generatePlan(){
+let bias = "NEUTRAL";
+
+let fear = document.getElementById("fear").innerText;
+if(fear.includes("Greed")) bias = "LARGO";
+if(fear.includes("Fear")) bias = "CORTO";
+
+let pairs = [];
+
+if(bias == "LARGO"){
+pairs = ["EURUSD","GBPUSD","AUDUSD"];
+}
+if(bias == "CORTO"){
+pairs = ["USDJPY","USDCHF","USDCAD"];
+}
+
+let entry = 1.1000;
+let high = 1.1050;
+let low = 1.0950;
+
+let sl = structureSL(entry, high, low, bias == "LARGO" ? "BUY" : "SELL");
+let tp = bias == "LARGO" ? entry + (entry - sl)*3 : entry - (sl - entry)*3;
+
+
+document.getElementById('result').innerHTML = `
+<h2>Sesgo: ${bias}</h2>
+<p>Pares:</p>
+<ul>
+<li>${pairs[0]}</li>
+<li>${pairs[1]}</li>
+<li>${pairs[2]}</li>
+</ul>
+<p>SL estructural: ${sl.toFixed(5)}</p>
+<p>TP (RR 1:3): ${tp.toFixed(5)}</p>
+`;
+}
+</script>
+
+</body>
+</html>
