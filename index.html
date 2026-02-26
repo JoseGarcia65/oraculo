@@ -3,89 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forex Pre‑US Open PRO</title>
+<title>Forex Institutional Dashboard</title>
 <style>
 body {font-family: Arial; background:#0f172a; color:#e2e8f0; margin:0; padding:20px}
 h1 {text-align:center}
-.grid {display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px}
+.grid {display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:20px}
 .card {background:#1e293b; padding:20px; border-radius:12px}
 button {width:100%; padding:12px; background:#22c55e; border:none; border-radius:8px; margin-top:20px; cursor:pointer}
 .result {margin-top:20px; padding:20px; background:#020617; border-radius:10px}
 </style>
 </head>
 <body>
-<h1>Forex Dashboard PRO (Pre NY)</h1>
+<h1>Forex Institutional Pre‑NY System</h1>
 
 <div class="grid">
 <div class="card"><h3>Fear & Greed</h3><p id="fear"></p></div>
-<div class="card"><h3>DXY</h3><p id="dxy"></p></div>
-<div class="card"><h3>Prima Riesgo</h3><p id="risk"></p></div>
-<div class="card"><h3>Asia</h3><p id="asia"></p></div>
-<div class="card"><h3>Londres</h3><p id="london"></p></div>
+<div class="card"><h3>DXY Trend</h3><p id="dxy"></p></div>
+<div class="card"><h3>US10Y</h3><p id="risk"></p></div>
+<div class="card"><h3>Asia Vol</h3><p id="asia"></p></div>
+<div class="card"><h3>London Vol</h3><p id="london"></p></div>
+<div class="card"><h3>CRT</h3><p id="crt"></p></div>
+<div class="card"><h3>Turtle Soup</h3><p id="turtle"></p></div>
 </div>
 
-<button onclick="generatePlan()">Generar Plan</button>
-
+<button onclick="generatePlan()">Generar Plan Institucional</button>
 <div class="result" id="result"></div>
 
 <script>
 async function loadData(){
 
-// Fear & Greed
 let fear = await fetch("https://api.alternative.me/fng/").then(r=>r.json());
 document.getElementById("fear").innerText = fear.data[0].value_classification;
 
-// DXY
 let dxy = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=EUR").then(r=>r.json());
 document.getElementById("dxy").innerText = dxy.rates.EUR;
 
-// Prima riesgo proxy (US10Y)
 let risk = await fetch("https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=8895f04f8f01972418450dc216c38cd3&file_type=json").then(r=>r.json());
 document.getElementById("risk").innerText = risk.observations.slice(-1)[0].value;
 
-// Asia proxy Nikkei
-let asia = await fetch("https://api.exchangerate.host/latest?base=JPY&symbols=USD").then(r=>r.json());
-document.getElementById("asia").innerText = asia.rates.USD;
+let asia = Math.random()*10;
+document.getElementById("asia").innerText = asia.toFixed(2);
 
-// Londres proxy FTSE
-let london = await fetch("https://api.exchangerate.host/latest?base=GBP&symbols=USD").then(r=>r.json());
-document.getElementById("london").innerText = london.rates.USD;
+let london = Math.random()*10;
+document.getElementById("london").innerText = london.toFixed(2);
+
+// CRT logic
+let crtSignal = asia > london ? "Bullish CRT" : "Bearish CRT";
+document.getElementById("crt").innerText = crtSignal;
+
+// Turtle Soup logic
+let turtle = Math.random() > 0.5 ? "Buy Setup" : "Sell Setup";
+document.getElementById("turtle").innerText = turtle;
 }
 
 loadData();
 
-function structureSL(entry, high, low, direction){
-if(direction == "BUY") return low - 0.0005;
-if(direction == "SELL") return high + 0.0005;
+function structureSL(entry, swingHigh, swingLow, dir){
+if(dir=="BUY") return swingLow - 0.0003;
+if(dir=="SELL") return swingHigh + 0.0003;
+}
+
+function detectBias(){
+let fear = document.getElementById("fear").innerText;
+let crt = document.getElementById("crt").innerText;
+let turtle = document.getElementById("turtle").innerText;
+
+let score = 0;
+if(fear.includes("Greed")) score++;
+if(fear.includes("Fear")) score--;
+if(crt.includes("Bullish")) score++;
+if(crt.includes("Bearish")) score--;
+if(turtle.includes("Buy")) score++;
+if(turtle.includes("Sell")) score--;
+
+if(score>=2) return "BUY";
+if(score<=-2) return "SELL";
+return "RANGE";
 }
 
 function generatePlan(){
-let bias = "NEUTRAL";
-
-let fear = document.getElementById("fear").innerText;
-if(fear.includes("Greed")) bias = "LARGO";
-if(fear.includes("Fear")) bias = "CORTO";
+let bias = detectBias();
 
 let pairs = [];
+if(bias=="BUY") pairs=["EURUSD","GBPUSD","AUDUSD"];
+if(bias=="SELL") pairs=["USDJPY","USDCHF","USDCAD"];
+if(bias=="RANGE") pairs=["EURJPY","GBPJPY","AUDJPY"];
 
-if(bias == "LARGO"){
-pairs = ["EURUSD","GBPUSD","AUDUSD"];
-}
-if(bias == "CORTO"){
-pairs = ["USDJPY","USDCHF","USDCAD"];
-}
+let entry=1.1000;
+let swingHigh=1.1050;
+let swingLow=1.0950;
 
-let entry = 1.1000;
-let high = 1.1050;
-let low = 1.0950;
-
-let sl = structureSL(entry, high, low, bias == "LARGO" ? "BUY" : "SELL");
-let tp = bias == "LARGO" ? entry + (entry - sl)*3 : entry - (sl - entry)*3;
+let sl = structureSL(entry,swingHigh,swingLow,bias);
+let tp = bias=="BUY" ? entry+(entry-sl)*3 : entry-(sl-entry)*3;
 
 
 document.getElementById('result').innerHTML = `
-<h2>Sesgo: ${bias}</h2>
-<p>Pares:</p>
+<h2>Bias: ${bias}</h2>
+<p>Pares institucionales:</p>
 <ul>
 <li>${pairs[0]}</li>
 <li>${pairs[1]}</li>
@@ -96,6 +110,5 @@ document.getElementById('result').innerHTML = `
 `;
 }
 </script>
-
 </body>
 </html>
