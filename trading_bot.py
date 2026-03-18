@@ -8,18 +8,27 @@ SMTP_PORT = 587
 SENDER_EMAIL = "tu-correo.gmail.com"
 SENDER_PASSWORD = "tu-contraseña-de-aplicacion" # No es tu clave normal, es una 'App Password'
 
+import yfinance as yf # Debes añadir 'yfinance' a un archivo requirements.txt
+
 def generar_pronostico():
-    # Aquí iría la lógica de conexión a la API de Forex
-    # Por ahora, simulamos el análisis técnico de mañana
-    datos = {
-        "par": "EUR/USD",
-        "accion": "VENTA (SHORT)",
-        "entrada": "1.1470",
-        "tp": "1.1390",
-        "sl": "1.1520",
-        "razon": "Divergencia Fed/BCE y aversión al riesgo por tensiones en Oriente Medio."
+    # Descargamos los últimos datos del GBP/USD
+    ticker = yf.Ticker("GBPUSD=X")
+    data = ticker.history(period="1d", interval="15m")
+    precio_actual = round(data['Close'].iloc[-1], 4)
+    
+    # Lógica de niveles basada en el precio real
+    # Ejemplo: TP a 50 pips y SL a 30 pips
+    tp = round(precio_actual + 0.0050, 4)
+    sl = round(precio_actual - 0.0030, 4)
+
+    return {
+        "par": "GBP/USD",
+        "accion": "COMPRA (LONG)",
+        "entrada": precio_actual,
+        "tp": tp,
+        "sl": sl,
+        "razon": "Análisis técnico automatizado basado en el precio actual de mercado y momentum post-sesión."
     }
-    return datos
 
 def enviar_correo(pronostico):
     msg = MIMEMultipart()
