@@ -112,7 +112,7 @@ def actualizar_index_html(p):
                     async function pedirToken() {{
                         const token = prompt("Introduce tu Token de GitHub:");
                         if(!token) return;
-                        const res = await fetch('https://api.github.com/repos/TU_USUARIO/TU_REPO/actions/workflows/main.yml/dispatches', {{
+                        const res = await fetch('https://api.github.com/repos/JoseGarcia65/oraculo_2/actions/workflows/main.yml/dispatches', {{
                             method: 'POST',
                             headers: {{ 'Authorization': `Bearer ${{token}}`, 'Accept': 'application/vnd.github.v3+json' }},
                             body: JSON.stringify({{ ref: 'main' }})
