@@ -1,8 +1,14 @@
 import yfinance as yf
 import os
 import pandas as pd
-import pandas_ta as ta  # Necesitaremos instalar esta librería para el RSI
 from datetime import datetime
+
+def calcular_rsi(data, window=14):
+    delta = data.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    return 100 - (100 / (1=rs))
 
 def obtener_analisis_profundo():
     activos = [
@@ -15,44 +21,39 @@ def obtener_analisis_profundo():
     ]
     
     resultados = []
-    print(f"Analizando señales en {len(activos)} pares...")
+    print(f"Analizando {len(activos)} pares con RSI manual...")
     
     for simbolo in activos:
         try:
             ticker = yf.Ticker(simbolo)
-            # Pedimos datos para SMA200 y RSI
             data = ticker.history(period="250d", interval="1d")
             if len(data) < 200: continue
             
-            # Indicadores Técnicos
             precio = data['Close'].iloc[-1]
             sma_200 = data['Close'].rolling(window=200).mean().iloc[-1]
-            # Cálculo de RSI (14 periodos)
-            rsi = ta.rsi(data['Close'], length=14).iloc[-1]
             
-            # LÓGICA DEL SEMÁFORO
+            # Cálculo de RSI Manual
+            series_rsi = calcular_rsi(data['Close'])
+            rsi = series_rsi.iloc[-1]
+            
             señal = "ESPERAR"
-            color_web = "#787b86" # Gris
+            color_web = "#787b86"
             icono = "⚪"
 
-            # Condición de COMPRA: Tendencia Alcista + RSI debajo de 40 (está volviendo a subir)
             if precio > sma_200 and rsi < 45:
                 señal = "COMPRA"
-                color_web = "#26a69a" # Verde
+                color_web = "#26a69a"
                 icono = "🟢"
-            
-            # Condición de VENTA: Tendencia Bajista + RSI encima de 60 (está agotado)
             elif precio < sma_200 and rsi > 55:
                 señal = "VENTA"
-                color_web = "#ef5350" # Rojo
+                color_web = "#ef5350"
                 icono = "🔴"
 
             dec = 2 if "JPY" in simbolo else 4
-            
             resultados.append({
                 "par": simbolo.replace("=X", ""),
                 "precio": round(precio, dec),
-                "rsi": round(rsi, 1),
+                "rsi": round(rsi, 1) if not pd.isna(rsi) else 50.0,
                 "señal": señal,
                 "color": color_web,
                 "icono": icono,
@@ -60,7 +61,6 @@ def obtener_analisis_profundo():
             })
         except: continue
             
-    # Ordenar: Primero las Compras y Ventas, luego los "Esperar"
     resultados.sort(key=lambda x: x['señal'] == "ESPERAR")
     return resultados
 
@@ -87,7 +87,7 @@ def actualizar_index_html(lista_pares):
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Forex Signals Master</title>
+        <title>Forex Signals Radar</title>
         <style>
             body {{ background:#131722; color:#d1d4dc; font-family:sans-serif; padding:20px; }}
             .box {{ max-width:1000px; margin:0 auto; background:#1e222d; border-radius:12px; padding:25px; border:1px solid #434651; }}
@@ -102,7 +102,7 @@ def actualizar_index_html(lista_pares):
             <div class="status-bar">
                 <div>
                     <h1 style="margin:0; font-size:1.5rem;">🚨 Radar de Oportunidades</h1>
-                    <p style="color:#787b86; font-size:0.8rem;">Estrategia: SMA 200 + RSI Momentum</p>
+                    <p style="color:#787b86; font-size:0.8rem;">Estrategia: SMA 200 + RSI (Cálculo Nativo)</p>
                 </div>
                 <button id="updateBtn" class="btn" onclick="pedirToken()">🔄 ESCANEAR MERCADO</button>
             </div>
@@ -122,7 +122,7 @@ def actualizar_index_html(lista_pares):
                 const res = await fetch('https://api.github.com/repos/JoseGarcia65/oraculo_2/actions/workflows/main.yml/dispatches', {{
                     method:'POST', headers:{{ 'Authorization':`Bearer ${{t}}` }}, body: JSON.stringify({{ref:'main'}})
                 }});
-                if(res.ok) {{ alert("🚀 Escaneando 28 pares... Refresca en 1 min."); setTimeout(()=>location.reload(), 60000); }}
+                if(res.ok) {{ alert("🚀 Escaneando... Refresca en 1 min."); setTimeout(()=>location.reload(), 60000); }}
                 else {{ localStorage.removeItem('gh_token'); location.reload(); }}
             }}
         </script>
