@@ -4,17 +4,6 @@ import os
 from email.mime.text import MIMEText
 from datetime import datetime
 
-async function pedirToken() {
-    // Intentar obtener el token guardado en el navegador
-    let token = localStorage.getItem('github_token');
-
-    // Si no existe, pedirlo al usuario
-    if (!token) {
-        token = prompt("Introduce tu Token de GitHub (Se guardará en este navegador):");
-        if (!token) return;
-        localStorage.setItem('github_token', token); // Guardar para la próxima vez
-    }
-
     const btn = document.getElementById('updateBtn');
     btn.innerText = "⏳ DESPERTANDO BOT...";
     btn.disabled = true;
