@@ -21,6 +21,61 @@
                     <p style="color:#787b86; font-size:0.8rem;">SMA 200 + RSI Momentum (Cálculo Nativo)</p>
                 </div>
                 <button id="updateBtn" class="btn" onclick="pedirToken()">🔄 ESCANEAR</button>
+
+                <button id="updateBtn" class="btn-update" onclick="pedirToken()">🔄 ACTUALIZAR AHORA</button>
+
+                <div style="text-align:left; background:#2a2e39; padding:15px; border-radius:8px; font-size:0.9rem;">
+                    <strong>Análisis:</strong> Análisis técnico validado: Ruptura de resistencia en H1 y debilidad del DXY.
+                </div>
+
+                <div class="history-section">
+                    <span class="label">Registro de Actividad:</span>
+                    <ul style='list-style:none; padding:0; text-align:left; font-size:0.85rem; color:#787b86; margin-top:10px;'><li style='margin-bottom:5px;'>✅ 2026-03-20 23:24:58 UTC</li><li style='margin-bottom:5px;'>✅ 2026-03-20 22:55:02 UTC</li><li style='margin-bottom:5px;'>✅ 2026-03-20 14:25:11 UTC</li><li style='margin-bottom:5px;'>✅ 2026-03-20 12:53:00 UTC</li><li style='margin-bottom:5px;'>✅ 2026-03-20 12:28:17 UTC</li></ul>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div id="tv_chart" style="height:100%;"></div>
+                <script src="https://s3.tradingview.com/tv.js"></script>
+                <script>
+                    new TradingView.widget({"autosize": true, "symbol": "FX:EURUSD", "interval": "60", "theme": "dark", "style": "1", "locale": "es", "container_id": "tv_chart"});
+                    
+                    async function pedirToken() {
+                        // 1. Intentar recuperar el token de la memoria del navegador
+                        let token = localStorage.getItem('gh_token');
+
+                        if (!token) {
+                            token = prompt("Introduce tu Token de GitHub (Se guardará en este navegador):");
+                            if (!token) return;
+                            localStorage.setItem('gh_token', token);
+                        }
+                        
+                        const btn = document.getElementById('updateBtn');
+                        const originalText = btn.innerText;
+                        btn.innerText = "⏳ DESPERTANDO BOT...";
+                        btn.disabled = true;
+
+                        try {
+                            const res = await fetch('https://api.github.com/repos/JoseGarcia65/oraculo_2/actions/workflows/main.yml/dispatches', {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+                                body: JSON.stringify({ ref: 'main' })
+                            });
+
+                            if(res.ok) {
+                                alert("🚀 ¡Bot despertado! La página se recargará sola en 60s.");
+                                setTimeout(() => { location.reload(); }, 60000);
+                            } else {
+                                throw new Error();
+                            }
+                        } catch (e) {
+                            alert("❌ Error: Token inválido o permisos insuficientes. Se pedirá de nuevo.");
+                            localStorage.removeItem('gh_token'); // Borrar para pedir uno nuevo la próxima vez
+                            btn.innerText = originalText;
+                            btn.disabled = false;
+                        }
+                    }
+                </script>
             </div>
             <table>
                 <thead>
