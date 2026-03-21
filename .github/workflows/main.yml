@@ -28,7 +28,7 @@ jobs:
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance pandas pandas_ta # Instalamos lo necesario para el RSI
+          pip install yfinance pandas  # Instalamos lo necesario para el RSI
 
       - name: Ejecutar Radar de Oportunidades
         run: python trading_bot.py
